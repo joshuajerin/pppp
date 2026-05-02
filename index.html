@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pppp</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <!-- Permission gate. Camera + audio need a user gesture to start. -->
+  <div id="permission" class="permission">
+    <h1>P P P P</h1>
+    <p>
+      pen pineapple apple pen — but make it CV. Pick two objects. Move your hands together.
+      Watch them fuse. Then keep going. It gets stupid fast.
+    </p>
+    <p style="font-size: 12px;">Camera runs locally. Nothing leaves your machine.</p>
+    <button id="startBtn">START</button>
+  </div>
+
+  <!-- Top half: live video + overlay canvas + HUD + subtitle text. -->
+  <div class="stage">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="overlay3d"></canvas>
+    <canvas id="overlay"></canvas>
+
+    <div class="hud">
+      <div class="brand">P P P P</div>
+      <div class="round-badge" id="roundBadge">ROUND 1 — 1 v 1</div>
+    </div>
+
+    <div class="merge-text" id="mergeText"></div>
+    <div class="subtitle" id="subtitle"></div>
+    <div class="status" id="status">starting…</div>
+  </div>
+
+  <!-- Bottom half: held slots + object grid -->
+  <div class="tray">
+    <div class="tray-header">
+      <div class="tray-title">objects</div>
+      <div class="held-display">
+        <div class="held-slot left" id="leftSlot">
+          <span class="label">L</span>
+          <span class="held-name">empty</span>
+        </div>
+        <div class="held-slot right" id="rightSlot">
+          <span class="label">R</span>
+          <span class="held-name">empty</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="resetBtn">RESET</button>
+        <button id="muteBtn">🔊</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
