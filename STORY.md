@@ -1,132 +1,170 @@
-# pppp
-
 ## Inspiration
 
-In 2016, a 53-year-old Japanese comedian uploaded a 45-second video of himself
-in a leopard-print outfit chanting **"I have a pen. I have an apple. Apple-pen!"**
-PPAP became one of the most-watched videos in YouTube history.
+In 2016 a 53-year-old man in a leopard-print outfit went on YouTube and said
+**"I have a pen. I have an apple. Apple-pen."** It got a billion views. I woke
+up one day and decided this needed computer vision. Nobody asked me to do this.
+I did it anyway.
 
-We wanted to take that joke and weaponize it with computer vision. The bit only
-works if the gestures feel real — the pen and apple have to *physically* fuse in
-your hands, not just text on a screen. That's the whole project: take the
-stupidest possible premise and execute it like it deserved a real engineering
-budget.
+The whole bit only lands if the pen and apple actually *fuse* in your hands —
+not as text, not as an emoji, but as real 3D objects that snap together like
+they're magnetic. So that's what I built. Stupid premise, real engineering.
 
-## What we learned
+## What it does
 
-**Hand-tracking coordinate spaces are full of traps.** MediaPipe gives
-landmarks in normalized $(x, y) \in [0, 1]$ coordinates assuming the camera
-input is *not* mirrored. Browsers display front-facing cameras mirrored. So a
-landmark MediaPipe labels `Left` is actually the user's right hand, and we had
-to swap the labels and remap
+You open the page. There's 102 little 3D objects in a tray at the bottom. You
+click one — it materializes in your hand on camera as a fully-3D rotating
+model. Click another — it shows up in the other hand. Bring your hands
+together: **they fuse** with a punchy snap animation, the combined name flashes
+center-screen in big white letters ("apple pen"), and the merged combo flies
+into the background like it has somewhere to be.
 
-$$
-x_{\text{world}} = \left(0.5 - x_{\text{landmark}}\right) \cdot W_{\text{view}}
-$$
+Want it back? Make a fist where it's parked. A yellow ring fills around your
+fist for a second. *Boom* — it flies into whichever hand you fisted with. Now
+pick a fresh object in the other hand, smash them together, and you've got
+"apple pen pineapple". Keep going forever. The whole time there's a 130 BPM
+PPAP-coded beat looping in the background that I wrote from scratch because
+I am not getting copyright-struck on a hackathon submission.
 
-so that what the user thinks of as their "left hand" controls the left slot.
-
-**Procedural everything beats asset pipelines for hackathons.** We tried
-Twemoji SVGs, Microsoft Fluent 3D PNGs, and free GLB models — every approach
-had a different licensing or CDN-uptime caveat. Building the 100+ objects from
-Three.js primitives (`SphereGeometry`, `TorusGeometry`, `TubeGeometry` along
-Bezier curves, `LatheGeometry` for the vase) means zero external assets, zero
-licensing risk, and the entire visual style is internally consistent.
-
-**Procedural music dodges copyright entirely.** The original PPAP soundtrack
-is 100% off-limits. So we built a Tone.js loop from scratch — 130 BPM,
-four-on-the-floor kick, claps on 2 & 4, plucky square lead climbing the F minor
-scale over $F_m \to E\flat \to D\flat \to C$, with a metallic "ding" on every
-downbeat. It captures the PPAP energy without a single sample.
-
-**Browser autoplay policy matters.** `Tone.start()`, `getUserMedia()`, and
-`speechSynthesis.speak()` all require a user gesture to fire. We chain all
-three to the START button.
+It's stupid. It is also unreasonably satisfying.
 
 ## How we built it
 
-The whole thing is a single static page — no build step, no framework, no
-backend. Three layers stacked over the camera feed:
+Single static webpage. No backend. No build step. No framework. I am not
+*that* serious.
 
-```
-┌─────────────────────────────────────┐
-│  2D canvas: hand skeleton, charge   │ ← z-index 3
-├─────────────────────────────────────┤
-│  Three.js canvas: 3D models, parks  │ ← z-index 2
-├─────────────────────────────────────┤
-│  <video>: mirrored camera feed      │ ← z-index 1
-└─────────────────────────────────────┘
-```
+- **Hand tracking**: MediaPipe Tasks Vision running in WASM with a GPU
+  delegate. 21 landmarks per hand at 30fps, fully local, your face never
+  touches a server.
+- **3D objects**: 102 procedural builders in Three.js. Every apple, pen,
+  rocket, robot, and figure-8 pretzel is made out of `SphereGeometry`,
+  `TubeGeometry`, `LatheGeometry`, etc. with PBR materials. Zero external
+  assets. ACES-filmic tone mapping + hemisphere fill + magenta & cyan rim
+  lights so every object glows like it's being interrogated.
+- **The beat**: Tone.js. Four-on-the-floor kick, snappy clap on 2 & 4, 16th
+  hi-hats, plucky square lead bouncing through \\(F_m \to E\flat \to D\flat \to C\\),
+  metallic "ding" on every downbeat. Procedural — no samples, no copyright
+  smoke.
+- **The merge**: when both hands hold something and the normalized hand
+  distance drops below
 
-**The game loop:**
+  $$d_{\text{merge}} = 0.18$$
 
-1. **MediaPipe HandLandmarker** runs in WASM with a GPU delegate, returning 21
-   landmarks per hand at ~30 fps.
-2. **Object pick** — clicking a tray card immediately attaches a `THREE.Group`
-   to the user's first empty hand. Each frame, we lerp the group's world
-   position toward the hand's palm landmark and slow-rotate on the Y axis.
-3. **Merge detection** — when both hands hold something and the normalized
-   distance falls below $d_{\text{merge}} = 0.18$, both groups animate toward
-   the midpoint with an ease-out cubic snap and a connecting glow line.
-4. **Parking** — the merged composite tweens to one of six normalized slots
-   along the upper third of the frame, scales down to $0.32$, and slow-rotates
-   in place with a sinusoidal vertical bob.
-5. **Fist-grab** — fist is detected by a fingertip-curl heuristic: for fingers
-   2–5, if $\|\text{tip} - \text{wrist}\| < 1.1 \cdot \|\text{MCP} - \text{wrist}\|$,
-   that finger is curled. ≥3 curled = fist. Hold the fist within
-   $r = 0.18$ of a parked composite for 1 second → it flies to that hand.
-6. **Chain forever** — pick a fresh object in one hand, fist-grab a parked
-   combo in the other, merge → bigger combo. Repeat for the full
-   `pen pineapple apple pen` tree.
+  the two 3D groups lerp toward the midpoint with an ease-out cubic, a yellow
+  connecting beam pulses between them, and they get re-parented into one
+  composite group that tweens into a parking slot. Pure vibes.
+- **Fist detection**: for each non-thumb finger I check
 
-**Lighting & rendering** — the 3D scene uses ACES-filmic tone mapping, a
-hemisphere fill, a key directional light, a warm fill, and two colored point
-lights (`#ff3e88` magenta + `#4ee3ff` cyan) that give every model brand-colored
-rims as it rotates.
+  $$\|\text{tip} - \text{wrist}\| < 1.1 \cdot \|\text{MCP} - \text{wrist}\|$$
 
-## Challenges
+  meaning the tip is closer to the wrist than the knuckle is, i.e. it's
+  curled. ≥3 of 4 fingers curled = fist. This is invariant to hand rotation
+  which is honestly the only reason it works.
 
-- **Hand-label mirroring** — described above. Took an embarrassingly long time
-  to realize MediaPipe's `Left` was the visually-right hand on a mirrored feed.
-- **Fist detection that actually works** — naive "all fingertips below MCPs"
-  fails at non-vertical hand angles. The wrist-relative-distance ratio is
-  invariant to hand orientation and ended up reliable in practice.
-- **Composite scaling** — chain `apple pen orange bottle car snake` and the
-  composite tries to render six full-sized models side-by-side. Solved with
-  $s = \min(1, 2 / \sqrt{n})$ scaling so the merged blob stays on-screen
-  without any single object becoming unreadable.
-- **Icon previews for 100+ models** — rendering a separate Three.js scene per
-  card would melt the GPU. We use one shared off-screen renderer that
-  add/render/remove/`toDataURL`s each builder once at boot, then sets the data
-  URL as the card's `<img src>`.
-- **Audio that loops without being annoying** — early versions had no swing,
-  a too-busy hat pattern, and a lead that overstayed its welcome. The final
-  loop is 4 bars with `Transport.swing = 0.04` for slight humanization.
+Hosted on Vercel from a GitHub repo. ~1500 lines of vanilla JS total.
+
+## Challenges we ran into
+
+- **MediaPipe handedness lied to me.** It returns "Left" / "Right" assuming an
+  unmirrored camera, but browsers display front-cams mirrored. I was
+  controlling my left hand with my right hand for an embarrassing amount of
+  time before I realized.
+- **Fist detection wanted to die.** The naive "fingertip below MCP" check
+  totally falls apart at any hand angle that isn't dead vertical. I had to
+  re-derive it as a wrist-relative-distance ratio (above) before it stopped
+  hallucinating fists.
+- **Long chains were popping out of frame.** Merge `apple pen orange bottle
+  car snake` and you've got six full-sized models trying to live in one row.
+  Solved it with \\(s = \min(1, 2 / \sqrt{n})\\) — the composite shrinks
+  inversely-square with item count, so it always fits no matter how cursed it
+  gets.
+- **102 icon thumbnails** would melt the GPU if rendered as 102 live mini
+  scenes. I share one off-screen Three.js renderer, add → render → toDataURL
+  → remove for each builder once at boot. Done.
+- **Audio autoplay policy.** `Tone.start()`, `getUserMedia`, and
+  `speechSynthesis.speak` all need a user gesture. I chain them all to one
+  START button click and hope for the best.
+
+## Accomplishments that we're proud of
+
+- **102 procedural 3D models.** Apple, pen, pineapple, banana, taco, UFO,
+  Saturn-with-rings, figure-8 pretzel, the whole bestiary. Zero external
+  assets means zero licensing risk and the entire visual style is internally
+  consistent.
+- **A custom PPAP-coded beat** that captures the energy without sampling
+  anything. F minor scale, 4-bar progression, metallic bell ding on the 1.
+  Not on copyright probation.
+- **It runs fully local.** Camera frames never leave the device. Hand tracking
+  is in-browser WASM. The TTS is built into your OS. The music is synthesized
+  live. I could deploy this to a USB stick.
+- **The snap-merge animation goes hard.** Both hands lerp toward the midpoint,
+  a yellow beam connects them, the merged thing scales-bounce-tweens into the
+  parking lot. Watching it land for the first time was the whole reason I
+  finished the project.
+- **The UI doesn't suck.** Glassmorphism over the camera, hairline borders,
+  no gradients, dead-center white live label that updates the moment you grab
+  something. Looks like an actual product, despite being stupid.
+
+## What we learned
+
+- **Procedural everything > asset pipelines, in a hackathon.** I tried
+  Twemoji, then Microsoft Fluent 3D PNGs, then GLBs from Poly Pizza. Every
+  approach had a different licensing or CDN-uptime caveat. Building from
+  primitives ended every problem at once.
+- **Coordinate spaces are a hazing ritual.** Mirrored video + unmirrored
+  landmarks + a separate orthographic Three.js camera + a 2D overlay canvas =
+  four coordinate systems you can fumble. I fumbled all of them. I learned.
+- **Procedural audio is way easier than you'd expect.** Tone.js gives you
+  `MembraneSynth`, `NoiseSynth`, `PolySynth`, `MetalSynth`, a `Sequence`
+  primitive, swing, and a master compressor in like 200 lines of config. I
+  went from "I want a beat" to "I have a beat" in an afternoon.
+- **Ship the dumbest version first.** v1 used flat emojis and the merge was
+  just "show big text." Getting that working in 30 minutes is what gave me the
+  confidence to keep upgrading until I had real 3D models, real parking slots,
+  and real fist gestures.
+
+## What's next for pppp
+
+- **Multiplayer**: two webcams, two players, your composites can collide with
+  theirs. The lobby is just sharing a URL.
+- **Particle bursts** on every merge so it feels even more deranged.
+- **A speedrun mode**: how fast can you build "pen pineapple apple pen" from
+  cold start? Leaderboard with localStorage. Or Supabase if I feel ambitious.
+- **Voice picking**: say "pen" → it attaches to whichever hand you raise next.
+  Already have the speech synth — just need recognition.
+- **PPAP karaoke mode**: the beat ducks and the original lyrics scroll at the
+  bottom while you act it out for the camera. The dumbest possible Just Dance.
+
+---
 
 ## Built with
 
 **Languages**: JavaScript (vanilla, ES modules), HTML, CSS
 
-**Computer vision**: [MediaPipe Tasks Vision](https://developers.google.com/mediapipe) (HandLandmarker, WASM + GPU delegate)
+**Frameworks & libraries**: Three.js (3D rendering, procedural geometry,
+ACES-filmic tone mapping, PBR materials), Tone.js (Web Audio synthesis —
+drums, bass, lead, bell, master FX), MediaPipe Tasks Vision (`HandLandmarker`
+in WASM with GPU delegate)
 
-**3D rendering**: [Three.js](https://threejs.org/) — orthographic camera, ACES-filmic
-tone mapping, `MeshStandardMaterial` with PBR roughness/metalness, procedural
-geometry (`SphereGeometry`, `TubeGeometry`, `LatheGeometry`, `ExtrudeGeometry`,
-`TorusGeometry`)
+**Browser APIs**: WebGL 2, Web Audio API, Web Speech API
+(`SpeechSynthesisUtterance`), MediaDevices `getUserMedia`, Canvas 2D,
+`requestAnimationFrame`
 
-**Audio**: [Tone.js](https://tonejs.github.io/) — `MembraneSynth` (kick),
-`NoiseSynth` (claps + hats), `MonoSynth` (bass), `PolySynth` (lead),
-`MetalSynth` (bell), `Compressor` + `Reverb` master chain
+**Cloud / platforms**: Vercel (static hosting, global CDN, SSL), GitHub
+(source control), jsDelivr (CDN for MediaPipe WASM), esm.sh (ESM CDN for
+Three.js + Tone.js)
 
-**Voice**: Web Speech API (`SpeechSynthesisUtterance`) — browser-native TTS
+**Databases**: none — fully client-side, no backend, no persisted state
 
-**Hosting**: Vercel (static deployment from GitHub)
+**Dev tooling**: Python `http.server` (local dev), `gh` CLI, `vercel` CLI
 
-**Tooling**: Python `http.server` for local dev, jsDelivr / esm.sh for ESM CDN
-delivery — no bundler, no `node_modules`
+**Tag-list for the form**:
+
+```
+javascript, html, css, three.js, tone.js, mediapipe, webgl, web-audio-api, web-speech-api, getusermedia, canvas, vercel, github, jsdelivr
+```
 
 ---
 
 **Live demo**: https://pppp-six-dun.vercel.app
 
-**Repository**: https://github.com/joshuajerin/pppp
+**Repo**: https://github.com/joshuajerin/pppp

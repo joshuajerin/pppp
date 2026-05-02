@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Vercel
+.vercel
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Logs / scratch
+*.log
+.tmp/
