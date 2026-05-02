@@ -9,9 +9,10 @@
 // "6" lights A F G E C D (no B). "7" lights A B C (just the top + right column).
 import { THREE, group, box } from "./_primitives.js";
 
-const SEG_W = 0.32;
-const SEG_H = 0.26;
-const SEG_T = 0.07;
+// Scaled up to match the visual weight of other objects in the catalog.
+const SEG_W = 0.5;
+const SEG_H = 0.42;
+const SEG_T = 0.1;
 const COLOR = 0xffd54e;
 const EMISSIVE = 0xff9800;
 const MAT_OPTS = {
@@ -22,13 +23,13 @@ const MAT_OPTS = {
 };
 
 const SEGMENTS = {
-  A: { pos: [0,    0.36, 0], orient: "h" },
-  B: { pos: [0.18, 0.18, 0], orient: "v" },
-  C: { pos: [0.18, -0.18, 0], orient: "v" },
-  D: { pos: [0,   -0.36, 0], orient: "h" },
-  E: { pos: [-0.18, -0.18, 0], orient: "v" },
-  F: { pos: [-0.18, 0.18, 0], orient: "v" },
-  G: { pos: [0,    0,    0], orient: "h" },
+  A: { pos: [0,     0.55, 0], orient: "h" },
+  B: { pos: [0.28,  0.28, 0], orient: "v" },
+  C: { pos: [0.28, -0.28, 0], orient: "v" },
+  D: { pos: [0,    -0.55, 0], orient: "h" },
+  E: { pos: [-0.28, -0.28, 0], orient: "v" },
+  F: { pos: [-0.28,  0.28, 0], orient: "v" },
+  G: { pos: [0,     0,    0], orient: "h" },
 };
 
 const DIGIT_SEGMENTS = {
