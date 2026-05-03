@@ -9,11 +9,10 @@
 // "6" lights A F G E C D (no B). "7" lights A B C (just the top + right column).
 import { THREE, group, box } from "./_primitives.js";
 
-// Cranked up to roughly 2× visual size — these read as the dominant element
-// in any composite they're part of.
-const SEG_W = 1.0;
-const SEG_H = 0.84;
-const SEG_T = 0.2;
+// Comically huge. These dominate the frame when held.
+const SEG_W = 1.8;
+const SEG_H = 1.5;
+const SEG_T = 0.35;
 const COLOR = 0xffd54e;
 const EMISSIVE = 0xff9800;
 const MAT_OPTS = {
@@ -24,13 +23,13 @@ const MAT_OPTS = {
 };
 
 const SEGMENTS = {
-  A: { pos: [0,     1.1, 0], orient: "h" },
-  B: { pos: [0.56,  0.56, 0], orient: "v" },
-  C: { pos: [0.56, -0.56, 0], orient: "v" },
-  D: { pos: [0,    -1.1, 0], orient: "h" },
-  E: { pos: [-0.56, -0.56, 0], orient: "v" },
-  F: { pos: [-0.56,  0.56, 0], orient: "v" },
-  G: { pos: [0,     0,    0], orient: "h" },
+  A: { pos: [0,    2.0, 0], orient: "h" },
+  B: { pos: [1.0,  1.0, 0], orient: "v" },
+  C: { pos: [1.0, -1.0, 0], orient: "v" },
+  D: { pos: [0,   -2.0, 0], orient: "h" },
+  E: { pos: [-1.0, -1.0, 0], orient: "v" },
+  F: { pos: [-1.0,  1.0, 0], orient: "v" },
+  G: { pos: [0,    0,   0], orient: "h" },
 };
 
 const DIGIT_SEGMENTS = {
